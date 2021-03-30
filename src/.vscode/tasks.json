@@ -6,7 +6,7 @@
         {
             "label": "build: debug",
             "type": "shell",
-            "command": "Set-Location -Path src ; ./extract_script.ps1 -Debugging $true ; ./check_size.ps1",
+            "command": "./extract_script.ps1 -Debugging $true ; ./check_size.ps1 ; Copy-Item -Path ./thumb.png -Destination ../",
             "problemMatcher": [],
             "group": {
                 "kind": "build",
@@ -16,7 +16,7 @@
         {
             "label": "build: release",
             "type": "shell",
-            "command": "Set-Location -Path src ; ./extract_script.ps1 -Debugging $false ; ./check_size.ps1",
+            "command": "./extract_script.ps1 -Debugging $false ; ./check_size.ps1 ; Copy-Item -Path ./thumb.png -Destination ../",
             "problemMatcher": [],
             "group": "build"
         }
