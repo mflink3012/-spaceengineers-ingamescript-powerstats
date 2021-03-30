@@ -1,0 +1,24 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build: debug",
+            "type": "shell",
+            "command": "Set-Location -Path src ; ./extract_script.ps1 -Debugging $true ; ./check_size.ps1",
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "build: release",
+            "type": "shell",
+            "command": "Set-Location -Path src ; ./extract_script.ps1 -Debugging $false ; ./check_size.ps1",
+            "problemMatcher": [],
+            "group": "build"
+        }
+    ]
+}
