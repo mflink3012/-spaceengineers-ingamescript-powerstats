@@ -10,6 +10,7 @@ using VRage.Game;
 using VRage.Collections;
 using Sandbox.ModAPI.Ingame;
 using VRage.Game.Components;
+using VRage.Game.GUI.TextPanel;
 using VRage.Game.ModAPI.Ingame;
 using Sandbox.ModAPI.Interfaces;
 using Sandbox.Game.EntityComponents;
@@ -22,7 +23,7 @@ namespace SpaceEngineers.IngameScript.PowerStats
     {
 #endregion
 
-        const String LCD_NAME = null;
+        const string PROPERTY_NAME_TEXTSURFACE = "text-surface";
         const int BATTERY_GRAPH_SIZE = 10;
         const string BATTERY_GRAPH_INCREASE = ">";
         const string BATTERY_GRAPH_DECREASE = "<";
@@ -32,29 +33,44 @@ namespace SpaceEngineers.IngameScript.PowerStats
         List<IMyBatteryBlock> batteries = new List<IMyBatteryBlock>();
         Dictionary<string, List<IMyPowerProducer>> producerMap = null;
         TimeSpan time = new TimeSpan();
-        IMyTextSurface lcdOutput = null;
+        IMyTextSurface textSurface = null;
+        string textSurfaceParentName = null;
+        Dictionary<String, String> props = null;
         
         public Program() {
             Runtime.UpdateFrequency = UpdateFrequency.Update100;
+            props = ReadProperties(Me.CustomData);
         }
         
         public void Save() {}
         
         public void Main(string argument, UpdateType updateSource) {
-            if (lcdOutput == null) {
-                if (LCD_NAME == null || LCD_NAME == "") {
-                    lcdOutput = Me.GetSurface(0);
-                } else {
-                    lcdOutput = GridTerminalSystem.GetBlockWithName(LCD_NAME) as IMyTextSurface;
+            if (textSurface == null) {
+                if (props.ContainsKey(PROPERTY_NAME_TEXTSURFACE)) {
+                    textSurfaceParentName = props[PROPERTY_NAME_TEXTSURFACE];
+                    textSurface = GridTerminalSystem.GetBlockWithName(textSurfaceParentName) as IMyTextSurface;
                 }
+
+                if (textSurface == null) {
+                    textSurface = Me.GetSurface(0);
+                }
+
+                textSurface.ContentType = ContentType.TEXT_AND_IMAGE;
+            }
+
+            if (props.ContainsKey(PROPERTY_NAME_TEXTSURFACE) && textSurface != Me.GetSurface(0)) {
+                Echo($"Using text-surface at: '{textSurfaceParentName}'");
+            } else if (props.ContainsKey(PROPERTY_NAME_TEXTSURFACE)) {
+                Echo($"ERROR: No '{PROPERTY_NAME_TEXTSURFACE}' found with name '{props[PROPERTY_NAME_TEXTSURFACE]}'. Using text-surface from this programmable block.");
+            } else {
+                Echo($"WARNING: No '{PROPERTY_NAME_TEXTSURFACE}' defined in custom data. Using text-surface from this programmable block.");
             }
         
-            ClearLCD();
+            textSurface.WriteText(""); // Clear text-surface
         
             Print("POWER-STATS");
         
             time += Runtime.TimeSinceLastRun;
-            //GridTerminalSystem.GetBlocksOfType(windturbines, generator => generator.BlockDefinition.SubtypeName == "LargeBlockWindTurbine");
         
             if (producerMap == null || (time.Seconds % 2) == 0) {
                 List<IMyPowerProducer> powerProducers = new List<IMyPowerProducer>();
@@ -121,7 +137,7 @@ namespace SpaceEngineers.IngameScript.PowerStats
                     batteryGraph += BATTERY_GRAPH_FULL;
                 }
         
-                if (powerLevelPercentage < 99.99f) {
+                if (batteryGraphFill < BATTERY_GRAPH_SIZE) {
                     if (loading) {
                         batteryGraph += BATTERY_GRAPH_INCREASE;
                     } else {
@@ -164,7 +180,7 @@ namespace SpaceEngineers.IngameScript.PowerStats
                     Print(count, name, producerOutput, producerMaxOutput);
                 }
             } else {
-                Print($"No power-producers found.");
+                Print("No power-producers found.");
             }
         }
         
@@ -174,19 +190,10 @@ namespace SpaceEngineers.IngameScript.PowerStats
         
         private void Print(String text) {
             Echo(text);
-            WriteToLCD(text);
+            textSurface.WriteText($"{text}\n", true);
         }
-        
-        private void WriteToLCD(String text) {
-            lcdOutput?.WriteText($"{text}\n", true);
-        }
-            
-        private void ClearLCD() {
-           lcdOutput?.WriteText("");
-        }
-        
+
         private string GetType(IMyPowerProducer producer) {
-            //return producer.BlockDefinition.SubtypeName;
             string typeString = producer.BlockDefinition.TypeIdString;
         
             if (typeString.StartsWith("MyObjectBuilder_")) {
@@ -196,6 +203,23 @@ namespace SpaceEngineers.IngameScript.PowerStats
             return typeString;    
         }
 
+        private Dictionary<String, String> ReadProperties(string source) {
+            Dictionary<String, String> result = new Dictionary<String, String>();
+            string[] lines = source.Split('\n');
+            string[] pair;
+
+            foreach (var line in lines)
+            {
+                pair = line.Split(new char[1] { '=' }, 2);
+                if (pair.Length == 2) {
+                    result.Add(pair[0].ToLower(), pair[1]);
+                } else {
+                    result.Add(pair[0].ToLower(), "");
+                }
+            }
+
+            return result;
+        }
 #region Footer
     }
 }
