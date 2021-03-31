@@ -8,6 +8,7 @@ List<IMyBatteryBlock> batteries = new List<IMyBatteryBlock>();
 Dictionary<string, List<IMyPowerProducer>> producerMap = null;
 TimeSpan time = new TimeSpan();
 IMyTextSurface textSurface = null;
+IMyTextSurface batterySurface = null;
 string textSurfaceParentName = null;
 Dictionary<String, String> props = null;
 public Program() {
@@ -22,7 +23,13 @@ public void Main(string argument, UpdateType updateSource) {
             textSurface = GridTerminalSystem.GetBlockWithName(textSurfaceParentName) as IMyTextSurface;
         }         if (textSurface == null) {
             textSurface = Me.GetSurface(0);
+            batterySurface = Me.GetSurface(1);
+            batterySurface.FontSize = 4.35f;
+            batterySurface.Alignment = TextAlignment.CENTER;
+        }         if (batterySurface == null) {
+            batterySurface = textSurface;
         }         textSurface.ContentType = ContentType.TEXT_AND_IMAGE;
+        batterySurface.ContentType = ContentType.TEXT_AND_IMAGE;
     }     if (props.ContainsKey(PROPERTY_NAME_TEXTSURFACE) && textSurface != Me.GetSurface(0)) {
         Echo($"Using text-surface at: '{textSurfaceParentName}'");
     } else if (props.ContainsKey(PROPERTY_NAME_TEXTSURFACE)) {
@@ -31,7 +38,8 @@ public void Main(string argument, UpdateType updateSource) {
         Echo($"WARNING: No '{PROPERTY_NAME_TEXTSURFACE}' defined in custom data. Using text-surface from this programmable block.");
     }
     textSurface.WriteText("");
-    Print("POWER-STATS");
+    batterySurface.WriteText("");
+    Print(textSurface, "POWER-STATS");
     time += Runtime.TimeSinceLastRun;
     if (producerMap == null || (time.Seconds % 2) == 0) {
         List<IMyPowerProducer> powerProducers = new List<IMyPowerProducer>();
@@ -92,15 +100,18 @@ public void Main(string argument, UpdateType updateSource) {
             for (int i = batteryGraphFill; i < BATTERY_GRAPH_SIZE - 1; ++i) {
                 batteryGraph += BATTERY_GRAPH_EMPTY;
             }
+        }         if (batterySurface == textSurface) {
+            Print(batterySurface, $"[{batteryGraph}] {(int)powerLevelPercentage} % ({Math.Round(currentStoredPower,2)}/{Math.Round(maxStoredPower,2)} MWh)\n");
+        } else {
+            Print(batterySurface, $"[{batteryGraph}]\n{(int)powerLevelPercentage} %\n{Math.Round(currentStoredPower,2)}/{Math.Round(maxStoredPower,2)} MWh");
         }
-        Print($"[{batteryGraph}] {(int)powerLevelPercentage} % ({Math.Round(currentStoredPower,2)}/{Math.Round(maxStoredPower,2)} MWh)\n");
         batteriesInput = (float)Math.Round(batteriesInput, 2);
         batteriesOutput = (float)Math.Round(batteriesOutput, 2);
         batteriesMaxOutput = (float)Math.Round(batteriesMaxOutput, 2);
-        Print($"{batteries.Count} {batteryType} input: {batteriesInput} MW");
+        Print(textSurface, $"{batteries.Count} {batteryType} input: {batteriesInput} MW");
         Print(batteries.Count, batteryType, batteriesOutput, batteriesMaxOutput);
     } else {
-        Print("No batteries found.");
+        Print(textSurface, "No batteries found.");
     }
     if (producerMap.Count > 0) {
         foreach (KeyValuePair<string, List<IMyPowerProducer>> kvp in producerMap) {
@@ -117,15 +128,15 @@ public void Main(string argument, UpdateType updateSource) {
             Print(count, name, producerOutput, producerMaxOutput);
         }
     } else {
-        Print("No power-producers found.");
+        Print(textSurface, "No power-producers found.");
     }
 }
 private void Print(int count, string name, float currentOutput, float maxOutput, string unit = "MW") {
-    Print($"{count} {name} output: {currentOutput}/{maxOutput} {unit}");
+    Print(textSurface, $"{count} {name} output: {currentOutput}/{maxOutput} {unit}");
 }
-private void Print(String text) {
+private void Print(IMyTextSurface surface, String text) {
     Echo(text);
-    textSurface.WriteText($"{text}\n", true);
+    surface.WriteText($"{text}\n", true);
 } private string GetType(IMyPowerProducer producer) {
     string typeString = producer.BlockDefinition.TypeIdString;
     if (typeString.StartsWith("MyObjectBuilder_")) {

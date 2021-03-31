@@ -34,6 +34,7 @@ namespace SpaceEngineers.IngameScript.PowerStats
         Dictionary<string, List<IMyPowerProducer>> producerMap = null;
         TimeSpan time = new TimeSpan();
         IMyTextSurface textSurface = null;
+        IMyTextSurface batterySurface = null;
         string textSurfaceParentName = null;
         Dictionary<String, String> props = null;
         
@@ -53,9 +54,17 @@ namespace SpaceEngineers.IngameScript.PowerStats
 
                 if (textSurface == null) {
                     textSurface = Me.GetSurface(0);
+                    batterySurface = Me.GetSurface(1);
+                    batterySurface.FontSize = 4.35f;
+                    batterySurface.Alignment = TextAlignment.CENTER;
+                }
+
+                if (batterySurface == null) {
+                    batterySurface = textSurface;
                 }
 
                 textSurface.ContentType = ContentType.TEXT_AND_IMAGE;
+                batterySurface.ContentType = ContentType.TEXT_AND_IMAGE;
             }
 
             if (props.ContainsKey(PROPERTY_NAME_TEXTSURFACE) && textSurface != Me.GetSurface(0)) {
@@ -67,8 +76,9 @@ namespace SpaceEngineers.IngameScript.PowerStats
             }
         
             textSurface.WriteText(""); // Clear text-surface
+            batterySurface.WriteText(""); // Clear battery-surface
         
-            Print("POWER-STATS");
+            Print(textSurface, "POWER-STATS");
         
             time += Runtime.TimeSinceLastRun;
         
@@ -148,17 +158,21 @@ namespace SpaceEngineers.IngameScript.PowerStats
                         batteryGraph += BATTERY_GRAPH_EMPTY;
                     }
                 }
-        
-                Print($"[{batteryGraph}] {(int)powerLevelPercentage} % ({Math.Round(currentStoredPower,2)}/{Math.Round(maxStoredPower,2)} MWh)\n");
+
+                if (batterySurface == textSurface) {
+                    Print(batterySurface, $"[{batteryGraph}] {(int)powerLevelPercentage} % ({Math.Round(currentStoredPower,2)}/{Math.Round(maxStoredPower,2)} MWh)\n");
+                } else {
+                    Print(batterySurface, $"[{batteryGraph}]\n{(int)powerLevelPercentage} %\n{Math.Round(currentStoredPower,2)}/{Math.Round(maxStoredPower,2)} MWh");
+                }
         
                 batteriesInput = (float)Math.Round(batteriesInput, 2);
                 batteriesOutput = (float)Math.Round(batteriesOutput, 2);
                 batteriesMaxOutput = (float)Math.Round(batteriesMaxOutput, 2);
         
-                Print($"{batteries.Count} {batteryType} input: {batteriesInput} MW");
+                Print(textSurface, $"{batteries.Count} {batteryType} input: {batteriesInput} MW");
                 Print(batteries.Count, batteryType, batteriesOutput, batteriesMaxOutput);
             } else {
-                Print("No batteries found.");
+                Print(textSurface, "No batteries found.");
             }
         
             if (producerMap.Count > 0) {
@@ -180,17 +194,17 @@ namespace SpaceEngineers.IngameScript.PowerStats
                     Print(count, name, producerOutput, producerMaxOutput);
                 }
             } else {
-                Print("No power-producers found.");
+                Print(textSurface, "No power-producers found.");
             }
         }
         
         private void Print(int count, string name, float currentOutput, float maxOutput, string unit = "MW") {
-            Print($"{count} {name} output: {currentOutput}/{maxOutput} {unit}");
+            Print(textSurface, $"{count} {name} output: {currentOutput}/{maxOutput} {unit}");
         }
         
-        private void Print(String text) {
+        private void Print(IMyTextSurface surface, String text) {
             Echo(text);
-            textSurface.WriteText($"{text}\n", true);
+            surface.WriteText($"{text}\n", true);
         }
 
         private string GetType(IMyPowerProducer producer) {
