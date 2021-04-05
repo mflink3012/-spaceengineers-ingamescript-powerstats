@@ -49,7 +49,7 @@ namespace SpaceEngineers.IngameScript.PowerStats
             if (textSurface == null) {
                 if (props.ContainsKey(PROPERTY_NAME_TEXTSURFACE)) {
                     textSurfaceParentName = props[PROPERTY_NAME_TEXTSURFACE];
-                    textSurface = GridTerminalSystem.GetBlockWithName(textSurfaceParentName) as IMyTextSurface;
+                    textSurface = ParseSurfaceProperty(textSurfaceParentName);
                 }
 
                 if (textSurface == null) {
@@ -230,6 +230,74 @@ namespace SpaceEngineers.IngameScript.PowerStats
                 } else {
                     result.Add(pair[0].ToLower(), "");
                 }
+            }
+
+            return result;
+        }
+
+        float ParseFloat(string src, string errDetails)
+        {
+            float result;
+
+            if (!float.TryParse(src, out result))
+            {
+                throw new Exception(errDetails);
+            }
+
+            return result;
+        }
+
+        private IMyTextSurface ParseSurfaceProperty(string surfaceDef, string warnPrefix = "WARNING: ")
+        {
+            string[] fields = surfaceDef.Split(':');
+            IMyTextSurface result = Me.GetSurface(0);
+
+            string blockName = fields[0];
+            int surfaceIdx = 0;
+
+            if (fields.Length > 2)
+            {
+                Echo($"{warnPrefix}Awaiting maximum 2 fields, but got {fields.Length}. Ignoring unnecessary fields.");
+            }
+
+            if (fields.Length > 1)
+            {
+                try
+                {
+                    surfaceIdx = (int)ParseFloat(fields[1], $"Value of field #2 (display-nr) is not a number: {fields[1]}");
+                }
+                catch (Exception ex)
+                {
+                    Echo($"{warnPrefix}{ex.Message}. Using display-nr {surfaceIdx}.");
+                }
+            }
+
+            IMyEntity ent = GridTerminalSystem.GetBlockWithName(blockName) as IMyEntity;
+            if (ent == null)
+            {
+                Echo($"{warnPrefix}'{blockName}' not found on this grid. Using programmable block for output.");
+            }
+            else if (ent is IMyTextSurfaceProvider)
+            {
+                IMyTextSurfaceProvider provider = (IMyTextSurfaceProvider)ent;
+                if (surfaceIdx >= provider.SurfaceCount)
+                {
+                    Echo($"{warnPrefix}You provided a display-nr {surfaceIdx} which '{blockName}' doesn't have (max. {provider.SurfaceCount - 1}). Using display-nr 0 instead.");
+                    surfaceIdx = 0;
+                }
+                result = provider.GetSurface(surfaceIdx);
+            }
+            else if (ent is IMyTextSurface)
+            {
+                if (fields.Length == 2)
+                {
+                    Echo($"{warnPrefix}You provided a display-nr, but '{blockName}' is not providing multiple displays. Ignoring display-nr.");
+                }
+                result = (IMyTextSurface)ent;
+            }
+            else
+            {
+                Echo($"{warnPrefix}'{blockName}' is not valid. Using programmable block for output.");
             }
 
             return result;
