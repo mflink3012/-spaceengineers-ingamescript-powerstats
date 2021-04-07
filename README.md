@@ -10,6 +10,7 @@ This script will output some details on current mass and volume to the display o
 It will give extra details (like defined blocks) in the debugging-section of the programmable block.
 
 # Custom Data (Properties)
+If you change the Custom Data of the programmable block the script is running on, you need to recompile the script to get the changes active.
 
 ## Another text-surface
 You can define another text-surface to use for output of the stats.
