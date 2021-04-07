@@ -5,10 +5,6 @@ With this script one is able to see, if the power-trend is increasing or decreas
 
 I needed this, because my first buildings had too less batteries and too less power-producers. This script is also very helpful on space ships to manage the power-drop from jump-drives.
 
-This script will output some details on current mass and volume to the display of the programmable block.
-
-It will give extra details (like defined blocks) in the debugging-section of the programmable block.
-
 # Custom Data (Properties)
 If you change the Custom Data of the programmable block the script is running on, you need to recompile the script to get the changes active.
 
